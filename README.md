@@ -1,14 +1,14 @@
 # MATLAB Minesweeper
 
 A simple, interactive Minesweeper game built in MATLAB.
-Constructed as my final project for Computer Programming 1 (BPA-PP1) at the Brno University of Technology (Vysoké Učení Technické) VUT in Brno, Czech Republic.
+Coded as my final project for Computer Programming 1 (BPA-PP1) at the Brno University of Technology (Vysoké Učení Technické) VUT in Brno, Czech Republic.
 
 ---
 
 ## Features
 
 - GUI-based gameplay with MATLAB App Designer or custom figures
-- Multiple difficulty levels: Beginner, Intermediate, Expert, or custom
+- Multiple difficulty levels: Beginner, Intermediate, Expert
 - Timer and mine counter to track progress
 - Save and load settings and high scores (`minesweeper_settings.mat`, `minesweeper_scores.mat`)
 
