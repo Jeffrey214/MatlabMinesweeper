@@ -9,7 +9,7 @@
 
 ## Features
 - Real-time GUI gameplay with interactive buttons and callbacks
-- Multiple difficulty levels: Beginner, Intermediate, Expert, or custom board size
+- Multiple difficulty levels: Easy, Medium, Hard
 - Timer and mine counter displayed during play
 - Persistent settings and high scores saved in `.mat` files
 
@@ -44,7 +44,7 @@ addpath(genpath(pwd));
    ```matlab
    MinesweeperApp
    ```
-2. Select a difficulty preset or load custom settings.
+2. Select a difficulty preset
 3. Play the game: left-click to reveal, right-click to flag mines.
 
 ## Technical Details
