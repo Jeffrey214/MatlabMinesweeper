@@ -1,7 +1,7 @@
 # MATLAB Minesweeper
 **Version:** 1.0.0  
 **Author:** Jeffrey R. Dotson  
-**Email:** jeffreyrdotson@vt.edu
+**Email:** jeffreyrdotson@vt.edu  
 **GitHub Repository:** [https://github.com/Jeffrey214/MatlabMinesweeper](https://github.com/Jeffrey214/MatlabMinesweeper)
 
 ## Overview
