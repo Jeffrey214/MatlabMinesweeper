@@ -1,25 +1,6 @@
 classdef MinesweeperApp < matlab.apps.AppBase
     % MinesweeperApp: A simple Minesweeper game using MATLAB App Designer.
 
-    % App by: Jeffrey Dotson
-    % Date: 2025-05-02
-
-    % Attributions:
-
-            % Code:
-            % Minesweeper game logic and UI design inspired by various online resources.
-            % MATLAB App Designer documentation for UI components and layout.
-            % MATLAB documentation for timer and file I/O functions.
-
-            % Icons:
-            % Mine Icon: <a href="https://www.flaticon.com/free-icons/mine" title="mine icons">Mine icons created by Creaticca Creative Agency - Flaticon</a>
-            % Flag Icon: <a href="https://www.flaticon.com/free-icons/flags" title="flags icons">Flags icons created by nawicon - Flaticon</a>
-            % Shovel Icon: <a href="https://www.flaticon.com/free-icons/shovel" title="shovel icons">Shovel icons created by popo2021 - Flaticon</a>
-            % Timer Icon: <a href="https://www.flaticon.com/free-icons/time" title="time icons">Time icons created by Freepik - Flaticon</a>
-            % Settings: <a href="https://www.flaticon.com/free-icons/settings" title="settings icons">Settings icons created by Freepik - Flaticon</a>
-            % Play: <a href="https://www.flaticon.com/free-icons/play-button" title="play button icons">Play button icons created by Alfredo Hernandez - Flaticon</a>
-            % High Score: <a href="https://www.flaticon.com/free-icons/trophy" title="trophy icons">Trophy icons created by Freepik - Flaticon</a>
-
     %% Public properties (UI components)
     properties (Access = public)
         UIFigure                matlab.ui.Figure
