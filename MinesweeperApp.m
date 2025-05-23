@@ -4,187 +4,118 @@ classdef MinesweeperApp < matlab.apps.AppBase
     % App by: Jeffrey Dotson
     % Date: 2024-05-02
 
-    % Attributions:
-
-        % Code:
-        % Minesweeper game logic and UI design inspired by various online resources.
-        % MATLAB App Designer documentation for UI components and layout.
-        % MATLAB documentation for timer and file I/O functions.
-
-        % Icons:
-        % Mine Icon: <a href="https://www.flaticon.com/free-icons/mine" title="mine icons">Mine icons created by Creaticca Creative Agency - Flaticon</a>
-        % Flag Icon: <a href="https://www.flaticon.com/free-icons/flags" title="flags icons">Flags icons created by nawicon - Flaticon</a>
-        % Shovel Icon: <a href="https://www.flaticon.com/free-icons/shovel" title="shovel icons">Shovel icons created by popo2021 - Flaticon</a>
-        % Timer Icon: <a href="https://www.flaticon.com/free-icons/time" title="time icons">Time icons created by Freepik - Flaticon</a>
-        % Settings: <a href="https://www.flaticon.com/free-icons/settings" title="settings icons">Settings icons created by Freepik - Flaticon</a>
-        % Play: <a href="https://www.flaticon.com/free-icons/play-button" title="play button icons">Play button icons created by Alfredo Hernandez - Flaticon</a>
-        % High Score: <a href="https://www.flaticon.com/free-icons/trophy" title="trophy icons">Trophy icons created by Freepik - Flaticon</a>
-        
-
-
-        %% Public properties (UI components)
+    %% Public properties (UI components)
     properties (Access = public)
-        UIFigure                matlab.ui.Figure                % Main application window
-        StartButton             matlab.ui.control.Button        % Button to start a new game
-        SettingsButton          matlab.ui.control.Button        % Button to open settings
-        HighScoresButton        matlab.ui.control.Button        % Button to view high scores
-        SettingsPanel           matlab.ui.container.Panel       % Panel for settings UI
-        DifficultyLabel         matlab.ui.control.Label         % Label for difficulty dropdown
-        DifficultyDropDown      matlab.ui.control.DropDown      % Dropdown for difficulty selection
-        SaveSettingsButton      matlab.ui.control.Button        % Button to save settings
-        ScoresPanel             matlab.ui.container.Panel       % Panel for high scores UI
-        ScoreFilterLabel        matlab.ui.control.Label         % Label for score filter
-        ScoreFilterDropDown     matlab.ui.control.DropDown      % Dropdown to filter scores
-        ScoresTable             matlab.ui.control.Table         % Table to display high scores
-        ResetScoresButton       matlab.ui.control.Button        % Button to reset scores
-        BackButton              matlab.ui.control.Button        % Button to return to main menu
-        GamePanel               matlab.ui.container.Panel       % Panel for the game grid
-        TimerLabel              matlab.ui.control.Label         % Label to display elapsed time (numbers only)
-        MinesLabel              matlab.ui.control.Label         % Label to display remaining mines (numbers only)
-        TitleLabel              matlab.ui.control.Label         % Label to display the title
-        SubTitleLabel           matlab.ui.control.Label         % Label to display the subtitle
-        TimerIcon               matlab.ui.control.Image         % Timer icon
-        MineIcon                matlab.ui.control.Image         % Mine icon
+        UIFigure                matlab.ui.Figure
+        StartButton             matlab.ui.control.Button
+        SettingsButton          matlab.ui.control.Button
+        HighScoresButton        matlab.ui.control.Button
+        SettingsPanel           matlab.ui.container.Panel
+        DifficultyLabel         matlab.ui.control.Label
+        DifficultyDropDown      matlab.ui.control.DropDown
+        SaveSettingsButton      matlab.ui.control.Button
+        ScoresPanel             matlab.ui.container.Panel
+        ScoreFilterLabel        matlab.ui.control.Label
+        ScoreFilterDropDown     matlab.ui.control.DropDown
+        ScoresTable             matlab.ui.control.Table
+        ResetScoresButton       matlab.ui.control.Button
+        BackButton              matlab.ui.control.Button
+        GamePanel               matlab.ui.container.Panel
+        TimerLabel              matlab.ui.control.Label
+        MinesLabel              matlab.ui.control.Label
+        TitleLabel              matlab.ui.control.Label
+        SubTitleLabel           matlab.ui.control.Label
+        TimerIcon               matlab.ui.control.Image
+        MineIcon                matlab.ui.control.Image
+        BackgroundImage         matlab.ui.control.Image % Added BackgroundImage property
     end
 
     %% Private properties
     properties (Access = private)
-        iconFolder                                  % Path to folder containing all your .png’s
-        settings                                    % Struct: stores gridSize & numMines
-        settingsFile = 'minesweeper_settings.mat'   % File path for settings
-        scoreFile    = 'minesweeper_scores.mat'     % File path for high scores
-        field                                       % Matrix: -1 for mines, >=0 for neighbor counts
-        revealed                                    % Logical matrix: true if cell is revealed
-        flagged                                     % Logical matrix: true if cell is flagged
-        buttons                                     % Array of button handles for grid cells
-        gridLayout                                  % UI grid layout for the game
-        startTime                                   % Timer start time (tic)
-        timerObj                                    % MATLAB timer object for UI timer
-        firstClickDone logical = false              % True after first click (mines placed)
-        hasWon logical = false                      % True if player has won
-        remainingMines                              % Number of mines left to flag
+        iconFolder
+        settings
+        settingsFile = 'minesweeper_settings.mat'
+        scoreFile    = 'minesweeper_scores.mat'
+        field
+        revealed
+        flagged
+        buttons
+        gridLayout
+        startTime
+        timerObj
+        firstClickDone logical = false
+        hasWon logical = false
+        remainingMines
     end
 
     %% Component creation and callbacks
     methods (Access = private)
         % Create all UI components and set up callbacks
         function createComponents(app)
-            % 1) Make the window a little shorter
-            app.UIFigure = uifigure( ...
-                'Position', [300 200 520 575], ... % From 640 down to 600
-                'Name',     'Minesweeper', ...
-                'Resize',   'off' );
-            % Set up figure right-click detection
+            app.UIFigure = uifigure('Position', [300 200 520 585], 'Name', 'Minesweeper', 'Resize', 'off');
             app.UIFigure.WindowButtonDownFcn = @(src, event) app.onFigureClick();
 
-            % 2) Grab the (new) client‐area height/width
+            % Add background image
+            app.BackgroundImage = uiimage(app.UIFigure, ...
+                'ImageSource', fullfile(app.iconFolder, 'background.png'), ...
+                'Position', [0, 0, app.UIFigure.Position(3), app.UIFigure.Position(4)]); % Stretch to fill the figure
+
+            % Ensure the background image is behind other components
+            uistack(app.BackgroundImage, 'bottom');
+
             figPos = app.UIFigure.Position;
-            figW   = figPos(3);
-            figH   = figPos(4);
+            figW = figPos(3);
+            figH = figPos(4);
 
-            % 3) Position the title + subtitle just under the OS chrome
-            titleY    = figH - 55;    % Shift "Minesweeper" title upward
-            subtitleY = titleY   - 30;
+            titleY = figH - 55;
+            subtitleY = titleY - 30;
 
-            app.TitleLabel = uilabel(app.UIFigure, ...
-                'Text',               'Minesweeper', ...
-                'FontSize',           34, ...
-                'FontWeight',         'bold', ...
-                'FontName',           'Comic Sans MS', ...
-                'HorizontalAlignment','center', ...
-                'Position',           [0, titleY, figW, 55]);
+            app.TitleLabel = uilabel(app.UIFigure, 'Text', 'Minesweeper', 'FontSize', 36, ...
+                'FontWeight', 'bold', 'FontName', 'Bookman Old Style', 'HorizontalAlignment', 'center', ...
+                'Position', [0, titleY, figW, 55]);
 
-            % Subtitle only on the home screen
-            if strcmp(app.UIFigure.Name, 'Minesweeper')
-                app.SubTitleLabel = uilabel(app.UIFigure, ...
-                    'Text',               'MATLAB Edition', ...
-                    'FontSize',           14, ...
-                    'FontAngle',          'italic', ...
-                    'FontName',           'Courier New', ...
-                    'HorizontalAlignment','center', ...
-                    'Position',           [0, subtitleY, figW, 55]);
-            else
-                if isvalid(app.SubTitleLabel)
-                    delete(app.SubTitleLabel); % Remove subtitle on other screens
-                end
-            end
+            app.SubTitleLabel = uilabel(app.UIFigure, 'Text', 'MATLAB Edition', 'FontSize', 14, ...
+                'FontAngle', 'italic', 'FontName', 'Courier New', 'HorizontalAlignment', 'center', ...
+                'Position', [0, subtitleY, figW, 55]);
 
-            % 4) Drop the buttons up under the subtitle
-            yPlay = subtitleY - 40;   % ~60px gap below subtitle
-            ySet  = yPlay       - 60;
-            yHigh = yPlay       - 120;
+            yPlay = subtitleY - 40;
+            ySet = yPlay - 60;
+            yHigh = yPlay - 120;
 
-            app.StartButton = uibutton(app.UIFigure, ...
-                'Icon',     fullfile(app.iconFolder,'play.png'), ...
-                'Text',     '  Play', ...
-                'Position', [180, yPlay, 160, 40], ...
-                'ButtonPushedFcn', @(~,~)app.startGame());
+            app.StartButton = uibutton(app.UIFigure, 'Icon', fullfile(app.iconFolder, 'play.png'), ...
+                'Text', '  Play', 'Position', [180, yPlay, 160, 40], 'ButtonPushedFcn', @(~, ~) app.startGame());
 
-            app.SettingsButton = uibutton(app.UIFigure, ...
-                'Icon',     fullfile(app.iconFolder,'settings.png'), ...
-                'Text',     '  Settings', ...
-                'Position', [180, ySet,  160, 40], ...
-                'ButtonPushedFcn', @(~,~)app.showSettings());
+            app.SettingsButton = uibutton(app.UIFigure, 'Icon', fullfile(app.iconFolder, 'settings.png'), ...
+                'Text', '  Settings', 'Position', [180, ySet, 160, 40], 'ButtonPushedFcn', @(~, ~) app.showSettings());
 
-            app.HighScoresButton = uibutton(app.UIFigure, ...
-                'Icon',     fullfile(app.iconFolder,'trophy.png'), ...
-                'Text',     '  High Scores', ...
-                'Position', [180, yHigh, 160, 40], ...
-                'ButtonPushedFcn', @(~,~)app.showHighScores());
+            app.HighScoresButton = uibutton(app.UIFigure, 'Icon', fullfile(app.iconFolder, 'trophy.png'), ...
+                'Text', '  High Scores', 'Position', [180, yHigh, 160, 40], 'ButtonPushedFcn', @(~, ~) app.showHighScores());
 
-            % Settings panel setup
-            app.SettingsPanel = uipanel(app.UIFigure, 'Title', 'Settings', ...
-                'Position', [20 20 480 330], 'Visible', 'off'); % Hidden by default
-            app.DifficultyLabel = uilabel(app.SettingsPanel, 'Text', 'Difficulty:', ...
-                'Position', [20 260 100 22]); % Difficulty label
-            app.DifficultyDropDown = uidropdown(app.SettingsPanel, ...
-                'Items', {'Easy', 'Medium', 'Hard'}, 'Position', [130 260 120 22], ...
-                'ValueChangedFcn', @(~, ~) app.updateDifficulty()); % Difficulty dropdown
+            app.SettingsPanel = uipanel(app.UIFigure, 'Title', 'Settings', 'Position', [20 20 480 330], 'Visible', 'off');
+            app.DifficultyLabel = uilabel(app.SettingsPanel, 'Text', 'Difficulty:', 'Position', [20 260 100 22]);
+            app.DifficultyDropDown = uidropdown(app.SettingsPanel, 'Items', {'Easy', 'Medium', 'Hard'}, ...
+                'Position', [130 260 120 22], 'ValueChangedFcn', @(~, ~) app.updateDifficulty());
             app.SaveSettingsButton = uibutton(app.SettingsPanel, 'Text', 'Save & Back', ...
-                'Position', [200 20 100 30], 'ButtonPushedFcn', @(~, ~) app.saveSettings()); % Save settings
+                'Position', [200 20 100 30], 'ButtonPushedFcn', @(~, ~) app.saveSettings());
 
-            % High scores panel setup
-            app.ScoresPanel = uipanel(app.UIFigure, 'Title', 'High Scores', ...
-                'Position', [20 20 480 330], 'Visible', 'off'); % Hidden by default
-            app.ScoreFilterLabel = uilabel(app.ScoresPanel, 'Text', 'Show:', ...
-                'Position', [20 280 50 22]); % Filter label
-            app.ScoreFilterDropDown = uidropdown(app.ScoresPanel, ...
-                'Items', {'All', 'Easy', 'Medium', 'Hard'}, 'Position', [80 280 100 22], ...
-                'ValueChangedFcn', @(~, ~) app.showHighScores()); % Filter dropdown
+            app.ScoresPanel = uipanel(app.UIFigure, 'Title', 'High Scores', 'Position', [20 20 480 330], 'Visible', 'off');
+            app.ScoreFilterLabel = uilabel(app.ScoresPanel, 'Text', 'Show:', 'Position', [20 280 50 22]);
+            app.ScoreFilterDropDown = uidropdown(app.ScoresPanel, 'Items', {'All', 'Easy', 'Medium', 'Hard'}, ...
+                'Position', [80 280 100 22], 'ValueChangedFcn', @(~, ~) app.showHighScores());
             app.ScoresTable = uitable(app.ScoresPanel, 'Position', [20 60 440 200], ...
-                'ColumnName', {'Name', 'Time', 'Difficulty'}); % Table for scores
+                'ColumnName', {'Name', 'Time', 'Difficulty'});
             app.ResetScoresButton = uibutton(app.ScoresPanel, 'Text', 'Reset Scores', ...
-                'Position', [100 20 120 30], 'ButtonPushedFcn', @(~, ~) app.resetScores()); % Reset scores
+                'Position', [100 20 120 30], 'ButtonPushedFcn', @(~, ~) app.resetScores());
             app.BackButton = uibutton(app.ScoresPanel, 'Text', 'Back', ...
-                'Position', [300 20 100 30], 'ButtonPushedFcn', @(~, ~) app.showStartScreen()); % Back to menu
+                'Position', [300 20 100 30], 'ButtonPushedFcn', @(~, ~) app.showStartScreen());
 
-            % Game panel and info labels
-            app.GamePanel = uipanel(app.UIFigure, 'Position', [20 20 480 460], 'Visible', 'off'); % Game grid panel
-            if isprop(app.GamePanel, 'AutoResizeChildren')
-                app.GamePanel.AutoResizeChildren = 'off';
-            end
-
-            % Add timer and mine icons to the board
-            app.TimerIcon = uiimage(app.UIFigure, ...
-                'ImageSource', fullfile(app.iconFolder, 'timer.png'), ...
-                'Position', [32, 516, 22, 22], ...
-                'Visible', 'off'); % Timer icon
-
-            app.MineIcon = uiimage(app.UIFigure, ...
-                'ImageSource', fullfile(app.iconFolder, 'mine.png'), ...
-                'Position', [436, 516, 22, 22], ...
-                'Visible', 'off'); % Mine icon
-
-            % Set labels to display numbers only
-            app.TimerLabel = uilabel(app.UIFigure, ...
-                'Text', '00:00', ...
-                'Position', [50, 520, 120, 22], ...
-                'Visible', 'off'); % Timer label
-
-            app.MinesLabel = uilabel(app.UIFigure, ...
-                'Text', '0', ...
-                'Position', [410, 520, 100, 22], ...
-                'Visible', 'off'); % Mines left label
+            app.GamePanel = uipanel(app.UIFigure, 'Position', [20 20 480 460], 'Visible', 'off');
+            app.TimerIcon = uiimage(app.UIFigure, 'ImageSource', fullfile(app.iconFolder, 'timer.png'), ...
+                'Position', [32, 516, 22, 22], 'Visible', 'off');
+            app.MineIcon = uiimage(app.UIFigure, 'ImageSource', fullfile(app.iconFolder, 'mine.png'), ...
+                'Position', [436, 516, 22, 22], 'Visible', 'off');
+            app.TimerLabel = uilabel(app.UIFigure, 'Text', '00:00', 'Position', [50, 520, 120, 22], 'Visible', 'off');
+            app.MinesLabel = uilabel(app.UIFigure, 'Text', '0', 'Position', [410, 520, 100, 22], 'Visible', 'off');
         end
 
         % Load settings from file or set defaults, sync UI
@@ -194,61 +125,43 @@ classdef MinesweeperApp < matlab.apps.AppBase
                 if isfile(app.settingsFile)
                     data = load(app.settingsFile);
                     if isfield(data, 'settings')
-                        app.settings = data.settings; % Load saved settings
+                        app.settings = data.settings;
                     else
-                        app.settings = struct('gridSize', 9, 'numMines', 10); % Default settings
+                        app.settings = struct('gridSize', 9, 'numMines', 10);
                     end
                 else
-                    app.settings = struct('gridSize', 9, 'numMines', 10); % Default settings
+                    app.settings = struct('gridSize', 9, 'numMines', 10);
                 end
             catch
-                app.settings = struct('gridSize', 9, 'numMines', 10); % Fallback to defaults
+                app.settings = struct('gridSize', 9, 'numMines', 10);
             end
 
-            % Set dropdown to match loaded settings
             switch app.settings.numMines
-                case 10
-                    app.DifficultyDropDown.Value = 'Easy';
-                case 30
-                    app.DifficultyDropDown.Value = 'Medium';
-                case 70
-                    app.DifficultyDropDown.Value = 'Hard';
+                case 10, app.DifficultyDropDown.Value = 'Easy';
+                case 30, app.DifficultyDropDown.Value = 'Medium';
+                case 70, app.DifficultyDropDown.Value = 'Hard';
             end
 
-            % Set the custom cursor to a small shovel icon (requires shovel.png in the Deps folder)
-            try
-                jFig = get(handle(app.UIFigure), 'JavaFrame');  % Undocumented feature
-                jWindow = jFig.fHG2Client.getWindow;
-                cursorImg = imread(fullfile(app.iconFolder, 'shovel.png'));  % Read shovel image
-                jImg = im2java(cursorImg);  % Convert MATLAB image to Java image
-                customCursor = java.awt.Toolkit.getDefaultToolkit().createCustomCursor(jImg, java.awt.Point(0,0), 'Shovel');
-                jWindow.setCursor(customCursor);
-            catch ME
-                warning('Custom cursor could not be set: %s', ME.message);
-                % Fallback to MATLAB's built-in hand pointer
-                app.UIFigure.Pointer = 'hand';
-            end
-
-            app.showStartScreen(); % Show main menu
+            app.showStartScreen();
         end
 
         % Show main menu, hide all other panels
         function showStartScreen(app)
-            app.hideAll(); % Hide all UI panels
-            app.StartButton.Visible = true;    % Show start button
-            app.SettingsButton.Visible = true; % Show settings button
-            app.HighScoresButton.Visible = true; % Show high scores button
+            app.hideAll();
+            app.StartButton.Visible = true;
+            app.SettingsButton.Visible = true;
+            app.HighScoresButton.Visible = true;
+            app.BackgroundImage.Visible = true;
         end
 
         % Show settings panel
         function showSettings(app)
-            app.hideAll(); % Hide all UI panels
-            app.SettingsPanel.Visible = true; % Show settings panel
+            app.hideAll();
+            app.SettingsPanel.Visible = true;
         end
 
         % Update settings struct based on dropdown value
         function updateDifficulty(app)
-            % Set grid size and mine count based on selected difficulty
             switch app.DifficultyDropDown.Value
                 case 'Easy'
                     app.settings = struct('gridSize', 9, 'numMines', 10);
@@ -261,16 +174,15 @@ classdef MinesweeperApp < matlab.apps.AppBase
 
         % Save settings to file and return to main menu
         function saveSettings(app)
-            settings = app.settings; % Copy settings struct
-            save(app.settingsFile, 'settings'); % Save to file
-            app.showStartScreen(); % Return to main menu
+            settings = app.settings;
+            save(app.settingsFile, 'settings');
+            app.showStartScreen();
         end
 
         % Show high scores panel, filter and display scores
         function showHighScores(app)
-            app.hideAll(); % Hide all UI panels
-            app.ScoresPanel.Visible = true; % Show scores panel
-            % Load scores from file or initialize empty
+            app.hideAll();
+            app.ScoresPanel.Visible = true;
             if isfile(app.scoreFile)
                 D = load(app.scoreFile, 'scores');
                 scores = D.scores;
@@ -278,20 +190,18 @@ classdef MinesweeperApp < matlab.apps.AppBase
                 scores = struct('name', {}, 'time', {}, 'difficulty', {});
             end
 
-            % Filter scores by difficulty if needed
             filt = app.ScoreFilterDropDown.Value;
             if ~strcmp(filt, 'All')
                 scores = scores(strcmp({scores.difficulty}, filt));
             end
 
-            % Prepare table data for display
             if isempty(scores)
                 data = {};
             else
                 times = arrayfun(@(s) sprintf('%02d:%02d', floor(s.time / 60), mod(s.time, 60)), scores, 'UniformOutput', false)';
                 data = [ {scores.name}' times {scores.difficulty}' ];
             end
-            app.ScoresTable.Data = data; % Update table
+            app.ScoresTable.Data = data;
         end
 
         % Reset high scores for selected difficulty or all
@@ -305,13 +215,13 @@ classdef MinesweeperApp < matlab.apps.AppBase
 
             filt = app.ScoreFilterDropDown.Value;
             if strcmp(filt, 'All')
-                scores = struct('name', {}, 'time', {}, 'difficulty', {}); % Clear all
+                scores = struct('name', {}, 'time', {}, 'difficulty', {});
             else
-                scores = scores(~strcmp({scores.difficulty}, filt)); % Remove selected
+                scores = scores(~strcmp({scores.difficulty}, filt));
             end
 
-            save(app.scoreFile, 'scores'); % Save updated scores
-            app.showHighScores(); % Refresh display
+            save(app.scoreFile, 'scores');
+            app.showHighScores();
         end
 
         % Hide all UI components and stop timer if running
@@ -320,142 +230,127 @@ classdef MinesweeperApp < matlab.apps.AppBase
                 app.SettingsPanel, app.ScoresPanel, app.GamePanel, ...
                 app.TimerLabel, app.MinesLabel};
             for c = comps
-                c{1}.Visible = false; % Hide each component
+                c{1}.Visible = false;
             end
 
-            % Hide timer and mine icons
             app.TimerIcon.Visible = false;
             app.MineIcon.Visible = false;
+            app.BackgroundImage.Visible = false;
 
-            % Stop and delete timer if running
             if ~isempty(app.timerObj) && isvalid(app.timerObj)
                 stop(app.timerObj);
                 delete(app.timerObj);
                 app.timerObj = [];
             end
 
-            % Reset game state flags
             app.firstClickDone = false;
             app.hasWon = false;
         end
 
         % Start a new game, initialize field and UI
         function startGame(app)
-            app.hideAll(); % Hide all UI panels
-            app.GamePanel.Visible = true; % Show game panel
-            app.TimerLabel.Visible = true; % Show timer
-            app.MinesLabel.Visible = true; % Show mines left
+            app.hideAll();
+            app.GamePanel.Visible = true;
+            app.TimerLabel.Visible = true;
+            app.MinesLabel.Visible = true;
 
-            % Show timer and mine icons
             app.TimerIcon.Visible = true;
             app.MineIcon.Visible = true;
             app.TimerLabel.Visible = true;
             app.MinesLabel.Visible = true;
 
-            n = app.settings.gridSize; % Grid size
-            app.field = zeros(n);                % Field: -1 for mines, >=0 for neighbor counts
-            app.revealed = false(n);             % All cells hidden
-            app.flagged = false(n);              % No flags
-            app.remainingMines = app.settings.numMines; % Set mine count
-            app.TimerLabel.Text = '00:00'; % Reset timer label
-            app.MinesLabel.Text = sprintf('%d', app.remainingMines); % Reset mines label
+            n = app.settings.gridSize;
+            app.field = zeros(n);
+            app.revealed = false(n);
+            app.flagged = false(n);
+            app.remainingMines = app.settings.numMines;
+            app.TimerLabel.Text = '00:00';
+            app.MinesLabel.Text = sprintf('%d', app.remainingMines);
 
-            % Remove old grid and create new grid layout
-            delete(app.GamePanel.Children); % Remove old grid
-            app.gridLayout = uigridlayout(app.GamePanel, [n n]); % Create new grid
+            delete(app.GamePanel.Children);
+            app.gridLayout = uigridlayout(app.GamePanel, [n n]);
             app.gridLayout.RowHeight = repmat({'1x'}, 1, n);
             app.gridLayout.ColumnWidth = repmat({'1x'}, 1, n);
             app.gridLayout.RowSpacing = 1;
             app.gridLayout.ColumnSpacing = 1;
-            app.buttons = gobjects(n^2, 1); % Preallocate button handles
+            app.buttons = gobjects(n^2, 1);
 
-            % Create grid buttons, each with left-click callback
             for i = 1:n
                 for j = 1:n
                     b = uibutton(app.gridLayout, 'Text', '', ...
-                        'ButtonPushedFcn', @(~, ~) app.onLeftClick(i, j)); % Left click
+                        'ButtonPushedFcn', @(~, ~) app.onLeftClick(i, j));
                     b.FontSize = 14;
-                    b.UserData = [i j]; % Store cell coordinates
+                    b.UserData = [i j];
                     b.HorizontalAlignment = 'center';
-                    app.buttons((i - 1) * n + j) = b; % Store button handle
+                    app.buttons((i - 1) * n + j) = b;
                 end
             end
 
-            % Start timer
-            app.startTime = tic; % Start timer
+            app.startTime = tic;
             app.timerObj = timer('ExecutionMode', 'fixedRate', 'Period', 1, ...
-                'TimerFcn', @(~, ~) app.updateTimer()); % Timer callback
-            start(app.timerObj); % Start timer
+                'TimerFcn', @(~, ~) app.updateTimer());
+            start(app.timerObj);
 
-            app.onFigureResize(); % Adjust layout
+            app.onFigureResize();
         end
 
         % Update timer label every second
         function updateTimer(app)
-            t = round(toc(app.startTime)); % Elapsed seconds
-            m = floor(t / 60);             % Minutes
-            s = mod(t, 60);                % Seconds
-            app.TimerLabel.Text = sprintf('%02d:%02d', m, s); % Update label
+            t = round(toc(app.startTime));
+            m = floor(t / 60);
+            s = mod(t, 60);
+            app.TimerLabel.Text = sprintf('%02d:%02d', m, s);
         end
 
         % Handle left click: reveal cell, place mines if first click
         function onLeftClick(app, i, j)
             if ~app.firstClickDone
-                app.placeMines(i, j); % Place mines after first click
+                app.placeMines(i, j);
                 app.firstClickDone = true;
             end
 
             if app.flagged(i, j)
-                return; % Ignore if flagged
+                return;
             end
 
             if app.field(i, j) == -1
-                % 1) Highlight the exact clicked mine
                 idx = (i - 1) * app.settings.gridSize + j;
                 btn = app.buttons(idx);
                 btn.Icon = fullfile(app.iconFolder, 'mine.png');
                 btn.Text = '';
-                btn.BackgroundColor = [1 0 0]; % A deeper red for the fatal click
+                btn.BackgroundColor = [1 0 0];
                 btn.Enable = 'off';
 
-                % 2) Reveal all the others in light red
                 app.revealAllMines();
 
-                % 3) Wait 3 seconds, then show Game Over
-                t = timer( ...
-                    'StartDelay', 3, ...
-                    'ExecutionMode', 'singleShot', ...
-                    'TimerFcn', @(~, ~) app.gameOver() ...
-                );
+                t = timer('StartDelay', 3, 'ExecutionMode', 'singleShot', ...
+                    'TimerFcn', @(~, ~) app.gameOver());
                 start(t);
                 return;
             end
 
-            app.revealCell(i, j); % Reveal cell
-            app.checkWin();       % Check for win
+            app.revealCell(i, j);
+            app.checkWin();
         end
 
         % Handle right click: flag/unflag cell
         function onFigureClick(app)
-            % Process right-clicks; capture events via WindowButtonDownFcn
             if ~strcmp(app.UIFigure.SelectionType, 'alt')
                 return;
             end
 
-            obj = app.UIFigure.CurrentObject; % Get clicked object
-            % Only process if the object is a grid button
+            obj = app.UIFigure.CurrentObject;
             if isempty(obj) || ~ismember(obj, app.buttons)
                 return;
             end
 
-            coords = obj.UserData; % Get cell coordinates
+            coords = obj.UserData;
             i = coords(1);
             j = coords(2);
             if ~app.firstClickDone
-                return; % Ignore if game not started
+                return;
             end
 
-            % Toggle flag using flag.png icon
             app.flagged(i, j) = ~app.flagged(i, j);
             if app.flagged(i, j)
                 obj.Icon = fullfile(app.iconFolder, 'flag.png');
@@ -469,53 +364,48 @@ classdef MinesweeperApp < matlab.apps.AppBase
 
         % Responsive layout: keep game panel square and labels above
         function onFigureResize(app)
-            figPos = app.UIFigure.Position; % Get figure position
-            margin = 10;                    % Margin size
-            topSpace = 30;                  % Space for labels
+            figPos = app.UIFigure.Position;
+            margin = 10;
+            topSpace = 30;
 
-            availW = figPos(3) - 2 * margin;           % Available width
-            availH = figPos(4) - topSpace - 2 * margin;% Available height
-            sz = min(availW, availH);                  % Square size
-            panelX = (figPos(3) - sz) / 2;             % Center X
-            panelY = margin;                           % Y position
-            app.GamePanel.Position = [panelX, panelY, sz, sz]; % Set panel position
+            availW = figPos(3) - 2 * margin;
+            availH = figPos(4) - topSpace - 2 * margin;
+            sz = min(availW, availH);
+            panelX = (figPos(3) - sz) / 2;
+            panelY = margin;
+            app.GamePanel.Position = [panelX, panelY, sz, sz];
 
-            % Add an x-offset to shift the labels to the right by 20 pixels
             offset = 50;
-            timePos = app.TimerLabel.Position;         % Timer label position
-            minesPos = app.MinesLabel.Position;        % Mines label position
+            timePos = app.TimerLabel.Position;
+            minesPos = app.MinesLabel.Position;
             app.TimerLabel.Position = [panelX + offset, panelY + sz + 5, timePos(3), timePos(4)];
             app.MinesLabel.Position = [panelX + sz - minesPos(3) + offset, panelY + sz + 5, minesPos(3), minesPos(4)];
         end
 
         % Place mines randomly, avoiding first click and neighbors
         function placeMines(app, si, sj)
-            n = app.settings.gridSize;     % Grid size
-            m = app.settings.numMines;     % Number of mines
-            allIdx = 1:n^2;                % All cell indices
+            n = app.settings.gridSize;
+            m = app.settings.numMines;
+            allIdx = 1:n^2;
 
-            % Exclude first click and its neighbors
             [rs, cs] = ndgrid(max(si - 1, 1):min(si + 1, n), max(sj - 1, 1):min(sj + 1, n));
-            forbid = sub2ind([n n], rs(:), cs(:)); % Forbidden indices
-            avail = setdiff(allIdx, forbid);       % Available indices
+            forbid = sub2ind([n n], rs(:), cs(:));
+            avail = setdiff(allIdx, forbid);
 
-            % Randomly select mine locations
             mines = avail(randperm(numel(avail), m));
-            app.field(:) = 0;              % Reset field
-            app.field(mines) = -1;         % Place mines
+            app.field(:) = 0;
+            app.field(mines) = -1;
 
-            % Compute neighbor mine counts for each cell
             for x = 1:n
                 for y = 1:n
                     if app.field(x, y) == -1
-                        continue; % Skip mines
+                        continue;
                     end
                     blk = app.field(max(x - 1, 1):min(x + 1, n), max(y - 1, 1):min(y + 1, n));
-                    app.field(x, y) = sum(blk(:) == -1); % Count neighboring mines
+                    app.field(x, y) = sum(blk(:) == -1);
                 end
             end
 
-            % Ensure no mines in the zero-cascade "safe" region
             safe = false(n);
             queue = [si sj];
             safe(si, sj) = true;
@@ -528,26 +418,22 @@ classdef MinesweeperApp < matlab.apps.AppBase
                             nx = x + dx; ny = y + dy;
                             if nx >= 1 && nx <= n && ny >= 1 && ny <= n && ~safe(nx, ny)
                                 safe(nx, ny) = true;
-                                queue(end + 1, :) = [nx ny]; %#ok<AGROW>
+                                queue(end + 1, :) = [nx ny];
                             end
                         end
                     end
                 end
             end
 
-            % Find any mines that accidentally fell in that safe region
             mineIdx = find(app.field == -1);
             bad = mineIdx(safe(mineIdx));
             if ~isempty(bad)
-                % Pick new spots outside safe & outside existing mines
                 avail = find(~safe & app.field ~= -1);
                 newMines = avail(randperm(numel(avail), numel(bad)));
 
-                % Move them
                 app.field(bad) = 0;
                 app.field(newMines) = -1;
 
-                % Recompute neighbor counts globally
                 for x = 1:n
                     for y = 1:n
                         if app.field(x, y) ~= -1
@@ -561,29 +447,28 @@ classdef MinesweeperApp < matlab.apps.AppBase
 
         % Reveal a cell, recursively reveal neighbors if zero
         function revealCell(app, i, j)
-            n = app.settings.gridSize; % Grid size
+            n = app.settings.gridSize;
             if app.revealed(i, j)
-                return; % Already revealed
+                return;
             end
 
-            app.revealed(i, j) = true; % Mark as revealed
-            idx = (i - 1) * n + j;     % Button index
-            b = app.buttons(idx);      % Button handle
-            b.Enable = 'off';          % Disable button
-            b.BackgroundColor = [.9 .9 .9]; % Set background
-            b.FontColor = [0 0 0];          % Set font color
+            app.revealed(i, j) = true;
+            idx = (i - 1) * n + j;
+            b = app.buttons(idx);
+            b.Enable = 'off';
+            b.BackgroundColor = [.9 .9 .9];
+            b.FontColor = [0 0 0];
 
             if app.field(i, j) > 0
-                b.Text = num2str(app.field(i, j)); % Show mine count
+                b.Text = num2str(app.field(i, j));
             else
-                b.Text = ''; % No text for zero
-                % Recursively reveal neighbors
+                b.Text = '';
                 for di = -1:1
                     for dj = -1:1
                         ni = i + di;
                         nj = j + dj;
                         if ni >= 1 && ni <= n && nj >= 1 && nj <= n && ~app.revealed(ni, nj)
-                            app.revealCell(ni, nj); % Reveal neighbor
+                            app.revealCell(ni, nj);
                         end
                     end
                 end
@@ -592,22 +477,20 @@ classdef MinesweeperApp < matlab.apps.AppBase
 
         % Reveal all mines on the field (after loss)
         function revealAllMines(app)
-            % Correctly reveal all mines on the field after a fail condition
-            n = app.settings.gridSize; % Grid size
+            n = app.settings.gridSize;
             for x = 1:n
                 for y = 1:n
                     if app.field(x, y) == -1
-                        idx = (x - 1) * n + y; % Button index
-                        btn = app.buttons(idx); % Button handle
-                        btn.Icon = fullfile(app.iconFolder, 'mine.png');
-                        btn.Text = '';
-                        btn.BackgroundColor = [1 0 0]; % Highlight mines in red
-                        btn.Enable = 'off';
-                    elseif ~app.revealed(x, y) && ~app.flagged(x, y)
-                        % Mark non-mine cells that were not revealed
                         idx = (x - 1) * n + y;
                         btn = app.buttons(idx);
-                        btn.BackgroundColor = [0.9 0.9 0.9]; % Light gray
+                        btn.Icon = fullfile(app.iconFolder, 'mine.png');
+                        btn.Text = '';
+                        btn.BackgroundColor = [1 0 0];
+                        btn.Enable = 'off';
+                    elseif ~app.revealed(x, y) && ~app.flagged(x, y)
+                        idx = (x - 1) * n + y;
+                        btn = app.buttons(idx);
+                        btn.BackgroundColor = [0.9 0.9 0.9];
                         btn.Enable = 'off';
                     end
                 end
@@ -617,19 +500,19 @@ classdef MinesweeperApp < matlab.apps.AppBase
         % Check for win: all non-mine cells revealed
         function checkWin(app)
             if app.hasWon
-                return; % Already won
+                return;
             end
 
-            n = app.settings.gridSize; % Grid size
+            n = app.settings.gridSize;
             if sum(app.revealed(:)) == n * n - app.settings.numMines
-                app.hasWon = true; % Mark as won
-                stop(app.timerObj); % Stop timer
-                elapsed = round(toc(app.startTime)); % Get elapsed time
-                name = inputdlg('You Won! Enter your name:', 'High Score', 1, {'Player'}); % Prompt for name
+                app.hasWon = true;
+                stop(app.timerObj);
+                elapsed = round(toc(app.startTime));
+                name = inputdlg('You Won! Enter your name:', 'High Score', 1, {'Player'});
                 if ~isempty(name)
-                    app.saveScore(name{1}, elapsed); % Save score
+                    app.saveScore(name{1}, elapsed);
                 end
-                app.showStartScreen(); % Return to menu
+                app.showStartScreen();
             end
         end
 
@@ -640,8 +523,8 @@ classdef MinesweeperApp < matlab.apps.AppBase
                 delete(app.timerObj);
                 app.timerObj = [];
             end
-            uialert(app.UIFigure, 'Game Over!', 'Boom!'); % Show alert
-            app.showStartScreen(); % Return to menu
+            uialert(app.UIFigure, 'Game Over!', 'Boom!');
+            app.showStartScreen();
         end
 
         % Save a new high score to file, sorted by time
@@ -653,27 +536,22 @@ classdef MinesweeperApp < matlab.apps.AppBase
                 sc = struct('name', {}, 'time', {}, 'difficulty', {});
             end
 
-            % Add new score
             sc(end + 1) = struct('name', name, 'time', time, 'difficulty', app.DifficultyDropDown.Value);
 
-            % Sort scores by time (ascending)
             if ~isempty(sc)
                 [~, o] = sort([sc.time]);
                 sc = sc(o);
             end
 
-            scores = sc; % Assign sorted scores
-            save(app.scoreFile, 'scores'); % Save to file
+            scores = sc;
+            save(app.scoreFile, 'scores');
         end
     end
 
     methods (Access = public)
         % Constructor: create UI and initialize app
         function app = MinesweeperApp
-            % 1) Set iconFolder before we ever build any buttons:
             app.iconFolder = fullfile(fileparts(mfilename('fullpath')), 'Deps');
-            
-            % 2) Now build everything
             app.createComponents();
             registerApp(app, app.UIFigure);
             app.startupFcn();
@@ -682,7 +560,7 @@ classdef MinesweeperApp < matlab.apps.AppBase
         % Destructor: clean up UI and timer
         function delete(app)
             if isvalid(app.UIFigure)
-                delete(app.UIFigure); % Delete UI
+                delete(app.UIFigure);
             end
             if ~isempty(app.timerObj) && isvalid(app.timerObj)
                 stop(app.timerObj);
