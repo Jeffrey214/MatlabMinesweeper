@@ -5,7 +5,7 @@
 **GitHub Repository:** [https://github.com/Jeffrey214/MatlabMinesweeper](https://github.com/Jeffrey214/MatlabMinesweeper)
 
 ## Overview
-MATLAB Minesweeper is a GUI-based implementation of the classic Minesweeper game, developed using MATLAB App Designer and custom figure callbacks. Players can choose preset difficulty levels or customize their own board.
+**MATLAB Minesweeper** is a GUI-based implementation of the classic Minesweeper game, developed using MATLAB App Designer and custom figure callbacks for the Spring 2025 semester. Players can choose preset difficulty levels and race against the clock.
 
 ## Features
 - Real-time GUI gameplay with interactive buttons and callbacks
